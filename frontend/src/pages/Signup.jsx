@@ -10,9 +10,14 @@ import { Eye, EyeOff } from 'lucide-react';
 import AuthLayout from '../components/AuthLayout';
 
 const signupSchema = z.object({
-  firstName: z.string().min(3, "Minimum character should be 3"),
+  firstName: z.string().min(3, "Minimum 3 characters").max(20, "Maximum 20 characters"),
   emailId: z.string().email("Invalid Email"),
-  password: z.string().min(8, "Password is too weak")
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[a-z]/, "Add a lowercase letter")
+    .regex(/[A-Z]/, "Add an uppercase letter")
+    .regex(/[0-9]/, "Add a number")
+    .regex(/[^A-Za-z0-9]/, "Add a symbol (e.g. ! @ #)")
 });
 
 function Signup() {
@@ -20,7 +25,7 @@ function Signup() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, loading } = useSelector((state) => state.auth);
+  const { isAuthenticated, loading, error } = useSelector((state) => state.auth);
 
   const {
     register,
@@ -107,6 +112,8 @@ function Signup() {
             <p className="auth-error">{errors.password.message}</p>
           )}
         </div>
+
+        {error && <p className="auth-error text-center">{error}</p>}
 
         <div className="pt-3">
           <button type="submit" className="auth-btn" disabled={loading}>

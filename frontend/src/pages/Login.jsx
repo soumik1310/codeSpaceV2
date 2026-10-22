@@ -11,7 +11,7 @@ import AuthLayout from '../components/AuthLayout';
 
 const loginSchema = z.object({
   emailId: z.string().email("Invalid Email"),
-  password: z.string().min(8, "Password is too weak")
+  password: z.string().min(1, "Password is required")
 });
 
 function Login() {
@@ -19,7 +19,7 @@ function Login() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, loading } = useSelector((state) => state.auth);
+  const { isAuthenticated, loading, error } = useSelector((state) => state.auth);
   const {
     register,
     handleSubmit,
@@ -89,6 +89,8 @@ function Login() {
             <p className="auth-error">{errors.password.message}</p>
           )}
         </div>
+
+        {error && <p className="auth-error text-center">{error}</p>}
 
         <div className="pt-3">
           <button type="submit" className="auth-btn" disabled={loading}>

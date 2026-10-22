@@ -5,7 +5,7 @@ import Signup from "./pages/Signup";
 import Homepage from "./pages/Homepage";
 import { useDispatch, useSelector } from 'react-redux';
 import { checkAuth } from "./authSlice";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import AdminPanel from "./components/AdminPanel";
 import ProblemPage from "./pages/ProblemPage"
 import Admin from "./pages/Admin";
@@ -17,14 +17,15 @@ function App(){
   
   const dispatch = useDispatch();
   const location = useLocation();
-  const {isAuthenticated,user,loading} = useSelector((state)=>state.auth);
+  const {isAuthenticated,user} = useSelector((state)=>state.auth);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // check initial authentication
+  // check initial authentication (only this shows the full-page spinner)
   useEffect(() => {
-    dispatch(checkAuth());
+    dispatch(checkAuth()).then(() => setAuthChecked(true));
   }, [dispatch]);
   
-  if (loading) {
+  if (!authChecked) {
     return <div className="min-h-screen flex items-center justify-center">
       <span className="loading loading-spinner loading-lg"></span>
     </div>;

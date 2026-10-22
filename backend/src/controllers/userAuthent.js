@@ -47,7 +47,13 @@ const register = async (req, res) => {
         })
     }
     catch (err) {
-        res.status(400).send("Error: " + err);
+        if (err.code === 11000) {
+            return res.status(409).json({ message: "An account with this email already exists" });
+        }
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({ message: "Please check your details (first name must be 3–20 characters)" });
+        }
+        res.status(400).json({ message: err.message });
     }
 }
 
@@ -62,7 +68,7 @@ const login = async (req, res) => {
         if (!password)
             throw new Error("Invalid Credentials");
 
-        const user = await User.findOne({ emailId });
+        const user = await User.findOne({ emailId: emailId.toLowerCase().trim() });
 
         if (!user)
             throw new Error("Invalid Credentials");
@@ -87,7 +93,7 @@ const login = async (req, res) => {
         })
     }
     catch (err) {
-        res.status(401).send("Error: " + err);
+        res.status(401).json({ message: "Invalid email or password" });
     }
 }
 
