@@ -64,11 +64,11 @@ function Admin() {
             return (
               <div
                 key={option.id}
-                className="card transition-colors duration-200 hover:border-white/30"
+                className="card transition-colors duration-200 hover:border-primary/50"
               >
                 <div className="card-body items-center text-center p-8">
                   {/* Icon */}
-                  <div className="rounded-full border border-white/10 bg-white/5 p-4 mb-4">
+                  <div className="rounded-full border border-base-300 bg-primary/10 p-4 mb-4">
                     <IconComponent size={32} className="text-base-content" />
                   </div>
                   

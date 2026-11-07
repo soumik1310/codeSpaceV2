@@ -124,7 +124,7 @@ const SubmissionHistory = ({ problemId }) => {
             </table>
           </div>
 
-          <p className="mt-4 text-sm text-gray-500">
+          <p className="mt-4 text-sm text-base-content/50">
             Showing {submissions.length} submissions
           </p>
         </>
@@ -163,7 +163,7 @@ const SubmissionHistory = ({ problemId }) => {
               )}
             </div>
             
-            <pre className="p-4 bg-gray-900 text-gray-100 rounded overflow-x-auto">
+            <pre className="p-4 bg-base-200 text-base-content border border-base-300 rounded overflow-x-auto">
               <code>{selectedSubmission.code}</code>
             </pre>
             

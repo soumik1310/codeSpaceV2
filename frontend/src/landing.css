@@ -1,0 +1,191 @@
+/* CodeSpace landing + auth page.
+   Everything is prefixed `cs-` and variables live on .cs-landing, so nothing
+   here leaks into the rest of the (dark) app or clashes with daisyUI. */
+
+.cs-landing {
+  --bg: #fcf3ee;
+  --ink: #1e1a1c;
+  --muted: #6f6a6c;
+  --wine: #7a0626;
+  --rose: #d9a2a8;
+  --card: #fffaf7;
+  --line: #eadfdb;
+  --shadow: rgba(122, 6, 38, 0.12);
+  --danger: #b4232f;
+
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, system-ui, sans-serif;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  .cs-landing {
+    --bg: #1a1214;
+    --ink: #f6ecea;
+    --muted: #a99da0;
+    --card: #241a1d;
+    --line: #3a2b2f;
+    --rose: #7d3a48;
+    --shadow: rgba(0, 0, 0, 0.4);
+    --danger: #ff8a93;
+  }
+}
+
+.cs-landing *,
+.cs-landing *::before,
+.cs-landing *::after {
+  box-sizing: border-box;
+}
+
+/* decorative blobs */
+.cs-blob { position: fixed; pointer-events: none; z-index: 0; }
+.cs-b1 {
+  top: -120px; left: -110px; width: 380px; height: 380px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--wine), var(--rose)); opacity: 0.8;
+}
+.cs-b2 {
+  bottom: -170px; right: -120px; width: 460px; height: 460px; border-radius: 50%;
+  background: linear-gradient(315deg, var(--wine), var(--rose)); opacity: 0.8;
+}
+
+.cs-wrap {
+  position: relative; z-index: 1;
+  max-width: 1360px; margin: 0 auto; padding: 40px 48px;
+  min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column;
+}
+
+.cs-header { display: flex; justify-content: space-between; align-items: center; }
+.cs-logo { font-weight: 800; font-size: 28px; letter-spacing: -0.04em; }
+.cs-logo span { color: var(--wine); }
+.cs-top { color: var(--ink); font-size: 17px; display: flex; align-items: center; gap: 12px; }
+
+/* text-style buttons */
+.cs-linkbtn {
+  background: none; border: 0; padding: 0; font: inherit; cursor: pointer;
+  color: var(--wine); font-weight: 500;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.cs-linkbtn.cs-underline { font-weight: 600; text-decoration: underline; }
+
+.cs-main {
+  flex: 1; display: grid; grid-template-columns: 1.1fr 1fr; gap: 64px; align-items: center;
+}
+
+.cs-h1 {
+  font-size: clamp(48px, 7vw, 92px); line-height: 0.95; letter-spacing: -0.045em;
+  font-weight: 800; margin: 0;
+}
+.cs-h1 em { display: block; font-style: normal; color: var(--wine); }
+
+.cs-tag {
+  margin: 44px 0 36px; padding-left: 30px; border-left: 2px solid var(--wine);
+  font: 500 21px/1.5 'JetBrains Mono', monospace;
+}
+.cs-tag b { color: var(--wine); font-weight: 500; }
+
+.cs-btn {
+  display: inline-flex; align-items: center; gap: 12px;
+  background: var(--wine); color: #fff; border: 0; border-radius: 999px;
+  padding: 20px 40px; font: 500 22px Inter, sans-serif; cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+}
+.cs-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 24px var(--shadow); }
+.cs-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+.cs-btn:focus-visible,
+.cs-input:focus-visible,
+.cs-tab:focus-visible,
+.cs-linkbtn:focus-visible { outline: 2px solid var(--wine); outline-offset: 3px; }
+
+.cs-card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 28px;
+  box-shadow: 0 24px 60px var(--shadow); max-width: 520px; width: 100%;
+  justify-self: end; overflow: hidden;
+}
+
+.cs-tabs {
+  position: relative; display: grid; grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--line); margin: 0 40px;
+}
+.cs-tab {
+  background: none; border: 0; padding: 30px 0 18px; font: 600 22px Inter, sans-serif;
+  color: var(--muted); cursor: pointer; transition: color 0.3s;
+}
+.cs-tab[aria-selected='true'] { color: var(--wine); }
+.cs-ink {
+  position: absolute; bottom: -1px; left: 0; width: 50%; height: 2px; background: var(--wine);
+  transition: transform 0.45s cubic-bezier(0.65, 0, 0.25, 1);
+}
+
+.cs-panels { display: grid; padding: 28px 40px 36px; }
+.cs-panel {
+  grid-area: 1 / 1;
+  transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.65, 0, 0.25, 1), visibility 0.45s;
+}
+.cs-panel.off { opacity: 0; visibility: hidden; pointer-events: none; }
+.cs-panel.off.left { transform: translateX(-32px); }
+.cs-panel.off.right { transform: translateX(32px); }
+
+.cs-h2 { font-size: 30px; letter-spacing: -0.02em; font-weight: 800; margin: 0; }
+.cs-sub { color: var(--muted); font-size: 20px; margin: 6px 0 26px; }
+
+.cs-field { margin-bottom: 14px; }
+.cs-inputwrap { position: relative; }
+.cs-inputwrap > svg.cs-i {
+  position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+  pointer-events: none; color: var(--ink);
+}
+.cs-input {
+  width: 100%; height: 58px; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--bg); padding: 0 52px; font: 400 19px Inter, sans-serif; color: var(--ink);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.cs-input::placeholder { color: var(--muted); opacity: 0.85; }
+.cs-input:focus { border-color: var(--wine); box-shadow: 0 0 0 4px var(--shadow); outline: none; }
+.cs-input[aria-invalid='true'] { border-color: var(--danger); }
+
+.cs-eye {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  background: none; border: 0; cursor: pointer; padding: 6px; display: flex; color: var(--ink);
+}
+.cs-eye:focus-visible { outline: 2px solid var(--wine); outline-offset: 2px; border-radius: 8px; }
+
+.cs-err { margin: 6px 4px 0; font-size: 14px; color: var(--danger); }
+.cs-server-err {
+  margin: 0 0 14px; padding: 12px 14px; border-radius: 12px; font-size: 15px;
+  color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+}
+
+.cs-submit { width: 100%; justify-content: center; border-radius: 16px; padding: 17px; font-size: 20px; margin-top: 6px; }
+
+.cs-or { display: flex; align-items: center; gap: 14px; color: var(--muted); margin: 26px 0 20px; font-size: 16px; }
+.cs-or::before, .cs-or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.cs-alt { text-align: center; font-size: 16px; margin: 0; }
+
+.cs-spin {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid rgb(255 255 255 / 0.4); border-top-color: #fff;
+  animation: cs-rot 0.7s linear infinite;
+}
+@keyframes cs-rot { to { transform: rotate(360deg); } }
+
+@media (max-width: 900px) {
+  .cs-wrap { padding: 28px 20px; }
+  .cs-main { grid-template-columns: 1fr; gap: 40px; padding: 40px 0; }
+  .cs-card { justify-self: center; }
+  .cs-panels { padding: 24px 24px 30px; }
+  .cs-tabs { margin: 0 24px; }
+  .cs-tag { font-size: 17px; }
+  .cs-top { font-size: 15px; gap: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-landing * { transition: none !important; animation: none !important; }
+}

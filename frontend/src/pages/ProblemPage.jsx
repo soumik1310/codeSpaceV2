@@ -1,12 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import Editor from '@monaco-editor/react';
-import { useParams, useSearchParams, useNavigate } from 'react-router';
-import { useSelector } from 'react-redux';
-import { MonacoBinding } from 'y-monaco';
+import { useParams } from 'react-router';
 import axiosClient from "../utils/axiosClient"
-import useCollabRoom from '../hooks/useCollabRoom';
-import CollabBar from '../components/CollabBar';
 import SubmissionHistory from "../components/SubmissionHistory"
 import ChatAi from '../components/ChatAi';
 import Editorial from '../components/Editorial';
@@ -28,40 +24,17 @@ const ProblemPage = () => {
   const [activeLeftTab, setActiveLeftTab] = useState('description');
   const [activeRightTab, setActiveRightTab] = useState('code');
   const editorRef = useRef(null);
-  const [editorInstance, setEditorInstance] = useState(null);
-  const [creatingRoom, setCreatingRoom] = useState(false);
-  const [notice, setNotice] = useState('');
+  // follow the OS light/dark setting (same as the app theme) for the code editor
+  const [isDark, setIsDark] = useState(
+    () => window.matchMedia('(prefers-color-scheme: dark)').matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = (e) => setIsDark(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
   let {problemId}  = useParams();
-
-  // ---- Collaboration ----
-  const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const roomId = searchParams.get('room');
-  const user = useSelector((state) => state.auth.user);
-
-  const notify = (msg) => {
-    setNotice(msg);
-    setTimeout(() => setNotice(''), 4000);
-  };
-
-  const starterFor = (lang) =>
-    problem?.startCode?.find(sc => sc.language === langMap[lang])?.initialCode || '';
-
-  const { status: collabStatus, error: collabError, session, peers, problemId: roomProblemId } = useCollabRoom({
-    roomId: problem ? roomId : null, // wait until the problem is loaded so we can seed the room
-    user,
-    getSeed: () => ({ code, language: selectedLanguage }),
-    onRunResult: ({ kind, result, by }) => {
-      if (kind === 'run') setRunResult({ ...result, sharedBy: by });
-      else setSubmitResult({ ...result, sharedBy: by });
-      notify(`${by} ${kind === 'run' ? 'ran' : 'submitted'} the code — check the ${kind === 'run' ? 'Testcase' : 'Result'} tab`);
-    },
-  });
-
-  // While in a room the shared Yjs text is the source of truth for the code
-  const sessionRef = useRef(null);
-  sessionRef.current = session;
-  const getCode = () => (session ? session.ytext.toString() : code);
 
   
 
@@ -88,84 +61,22 @@ const ProblemPage = () => {
 
   // Update code when language changes
   useEffect(() => {
-    if (problem && !sessionRef.current) {
+    if (problem) {
       const starter = problem.startCode?.find(sc => sc.language === langMap[selectedLanguage]);
       setCode(starter ? starter.initialCode : '');
     }
   }, [selectedLanguage, problem]);
 
-  // Bind Monaco to the shared document (and re-bind whenever the editor is re-mounted)
-  useEffect(() => {
-    if (!session || !editorInstance) return;
-    const model = editorInstance.getModel();
-    if (!model) return;
-    const binding = new MonacoBinding(session.ytext, model, new Set([editorInstance]), session.awareness);
-    return () => binding.destroy();
-  }, [session, editorInstance]);
-
-  // The editor is unmounted when the Code tab is hidden; drop the stale instance so we don't edit a disposed model
-  useEffect(() => {
-    if (activeRightTab !== 'code') setEditorInstance(null);
-  }, [activeRightTab]);
-
-  // Everyone in the room shares the same language
-  useEffect(() => {
-    if (!session) return;
-    const sync = () => {
-      const lang = session.ymeta.get('language');
-      if (lang) setSelectedLanguage(lang);
-    };
-    sync();
-    session.ymeta.observe(sync);
-    return () => session.ymeta.unobserve(sync);
-  }, [session]);
-
-  // Invite link pointed at a different problem than the URL: go to the right one
-  useEffect(() => {
-    if (roomProblemId && roomProblemId !== problemId) {
-      navigate(`/problem/${roomProblemId}?room=${roomId}`, { replace: true });
-    }
-  }, [roomProblemId, problemId, roomId, navigate]);
-
-  const handleInvite = async () => {
-    setCreatingRoom(true);
-    try {
-      const { data } = await axiosClient.post('/collab/create', { problemId });
-      setSearchParams({ room: data.roomId });
-    } catch (error) {
-      console.error('Error creating room:', error);
-      notify('Could not create an invite link. Please try again.');
-    } finally {
-      setCreatingRoom(false);
-    }
-  };
-
-  const handleLeaveRoom = () => {
-    if (sessionRef.current) setCode(sessionRef.current.ytext.toString()); // keep the code as a solo draft
-    setSearchParams({});
-  };
-
   const handleEditorChange = (value) => {
-    if (sessionRef.current) return; // shared text lives in Yjs
     setCode(value || '');
   };
 
   const handleEditorDidMount = (editor) => {
     editorRef.current = editor;
-    setEditorInstance(editor);
   };
 
   const handleLanguageChange = (language) => {
-    if (session) {
-      // swap the shared code for the new language's starter template, for everyone
-      session.ydoc.transact(() => {
-        session.ymeta.set('language', language);
-        session.ytext.delete(0, session.ytext.length);
-        session.ytext.insert(0, starterFor(language));
-      });
-    } else {
-      setSelectedLanguage(language);
-    }
+    setSelectedLanguage(language);
   };
 
   const handleRun = async () => {
@@ -174,12 +85,11 @@ const ProblemPage = () => {
     
     try {
       const response = await axiosClient.post(`/submission/run/${problemId}`, {
-        code: getCode(),
+        code,
         language: selectedLanguage
       });
 
       setRunResult(response.data);
-      session?.shareResult('run', response.data);
       setLoading(false);
       setActiveRightTab('testcase');
       
@@ -203,12 +113,11 @@ const ProblemPage = () => {
     
     try {
         const response = await axiosClient.post(`/submission/submit/${problemId}`, {
-        code: getCode(),
+        code:code,
         language: selectedLanguage
       });
 
        setSubmitResult(response.data);
-       session?.shareResult('submit', response.data);
        setLoading(false);
        setActiveRightTab('result');
       
@@ -231,10 +140,10 @@ const ProblemPage = () => {
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
-      case 'easy': return 'text-green-500';
-      case 'medium': return 'text-yellow-500';
-      case 'hard': return 'text-red-500';
-      default: return 'text-gray-500';
+      case 'easy': return 'text-success';
+      case 'medium': return 'text-warning';
+      case 'hard': return 'text-error';
+      default: return 'text-base-content/50';
     }
   };
 
@@ -349,7 +258,7 @@ const ProblemPage = () => {
                           </pre>
                         </div>
                       </div>
-                    )) || <p className="text-gray-500">Solutions will be available after you solve the problem.</p>}
+                    )) || <p className="text-base-content/50">Solutions will be available after you solve the problem.</p>}
                   </div>
                 </div>
               )}
@@ -357,7 +266,7 @@ const ProblemPage = () => {
               {activeLeftTab === 'submissions' && (
                 <div>
                   <h2 className="text-xl font-bold mb-4">My Submissions</h2>
-                  <div className="text-gray-500">
+                  <div className="text-base-content/50">
                     <SubmissionHistory problemId={problemId} />
                   </div>
                 </div>
@@ -417,40 +326,40 @@ const ProblemPage = () => {
                     </button>
                   ))}
                 </div>
-                {user && (
-                  <CollabBar
-                    inRoom={!!roomId}
-                    status={collabStatus}
-                    error={collabError}
-                    peers={peers}
-                    creating={creatingRoom}
-                    onInvite={handleInvite}
-                    onLeave={handleLeaveRoom}
-                  />
-                )}
               </div>
 
               {/* Monaco Editor */}
               <div className="flex-1">
                 <Editor
-                  key={session ? 'collab' : 'solo'}
                   height="100%"
                   language={getLanguageForMonaco(selectedLanguage)}
-                  value={session ? undefined : code}
+                  value={code}
                   onChange={handleEditorChange}
                   onMount={handleEditorDidMount}
-                  theme="codespace-black"
+                  theme={isDark ? 'codespace-dark' : 'codespace-light'}
                   beforeMount={(monaco) => {
-                    monaco.editor.defineTheme('codespace-black', {
+                    monaco.editor.defineTheme('codespace-light', {
+                      base: 'vs',
+                      inherit: true,
+                      rules: [],
+                      colors: {
+                        'editor.background': '#fffaf7',
+                        'editorGutter.background': '#fffaf7',
+                        'editor.lineHighlightBackground': '#7a06260d',
+                        'editorLineNumber.foreground': '#a99da0',
+                        'editorLineNumber.activeForeground': '#7a0626',
+                      },
+                    });
+                    monaco.editor.defineTheme('codespace-dark', {
                       base: 'vs-dark',
                       inherit: true,
                       rules: [],
                       colors: {
-                        'editor.background': '#000000',
-                        'editorGutter.background': '#000000',
+                        'editor.background': '#1a1214',
+                        'editorGutter.background': '#1a1214',
                         'editor.lineHighlightBackground': '#ffffff0d',
-                        'editorLineNumber.foreground': '#52525b',
-                        'editorLineNumber.activeForeground': '#fafafa',
+                        'editorLineNumber.foreground': '#6f6a6c',
+                        'editorLineNumber.activeForeground': '#f6ecea',
                       },
                     });
                   }}
@@ -510,9 +419,6 @@ const ProblemPage = () => {
           {activeRightTab === 'testcase' && (
             <div className="flex-1 p-4 overflow-y-auto">
               <h3 className="font-semibold mb-4">Test Results</h3>
-              {runResult?.sharedBy && (
-                <div className="text-xs text-base-content/60 mb-2">Run by {runResult.sharedBy}</div>
-              )}
               {runResult ? (
                 <div className={`alert ${runResult.success ? 'alert-success' : 'alert-error'} mb-4`}>
                   <div>
@@ -529,7 +435,7 @@ const ProblemPage = () => {
                                 <div><strong>Input:</strong> {tc.stdin}</div>
                                 <div><strong>Expected:</strong> {tc.expected_output}</div>
                                 <div><strong>Output:</strong> {tc.stdout}</div>
-                                <div className={'text-green-600'}>
+                                <div className={'text-success'}>
                                   {'✓ Passed'}
                                 </div>
                               </div>
@@ -548,7 +454,7 @@ const ProblemPage = () => {
                                 <div><strong>Input:</strong> {tc.stdin}</div>
                                 <div><strong>Expected:</strong> {tc.expected_output}</div>
                                 <div><strong>Output:</strong> {tc.stdout}</div>
-                                <div className={tc.status_id==3 ? 'text-green-600' : 'text-red-600'}>
+                                <div className={tc.status_id==3 ? 'text-success' : 'text-error'}>
                                   {tc.status_id==3 ? '✓ Passed' : '✗ Failed'}
                                 </div>
                               </div>
@@ -560,7 +466,7 @@ const ProblemPage = () => {
                   </div>
                 </div>
               ) : (
-                <div className="text-gray-500">
+                <div className="text-base-content/50">
                   Click "Run" to test your code with the example test cases.
                 </div>
               )}
@@ -570,9 +476,6 @@ const ProblemPage = () => {
           {activeRightTab === 'result' && (
             <div className="flex-1 p-4 overflow-y-auto">
               <h3 className="font-semibold mb-4">Submission Result</h3>
-              {submitResult?.sharedBy && (
-                <div className="text-xs text-base-content/60 mb-2">Submitted by {submitResult.sharedBy}</div>
-              )}
               {submitResult ? (
                 <div className={`alert ${submitResult.accepted ? 'alert-success' : 'alert-error'}`}>
                   <div>
@@ -596,7 +499,7 @@ const ProblemPage = () => {
                   </div>
                 </div>
               ) : (
-                <div className="text-gray-500">
+                <div className="text-base-content/50">
                   Click "Submit" to submit your solution for evaluation.
                 </div>
               )}
@@ -604,12 +507,6 @@ const ProblemPage = () => {
           )}
         </div>
       </div>
-
-      {notice && (
-        <div className="toast toast-end z-50">
-          <div className="alert alert-info text-sm"><span>{notice}</span></div>
-        </div>
-      )}
     </div>
   );
 };

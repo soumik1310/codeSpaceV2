@@ -56,11 +56,11 @@ function Homepage() {
       {/* Navigation Bar */}
       <nav className="navbar sticky top-0 z-30 px-4 sm:px-8">
         <div className="flex-1">
-          <NavLink to="/" className="text-xl font-semibold tracking-tight text-white">Code Space</NavLink>
+          <NavLink to="/" className="text-xl font-extrabold tracking-tight">Code<span className="text-primary">Space</span></NavLink>
         </div>
         <div className="flex-none gap-4">
           <div className="dropdown dropdown-end">
-            <div tabIndex={0} role="button" className="btn btn-ghost rounded-full border border-white/10 px-4">
+            <div tabIndex={0} role="button" className="btn btn-ghost rounded-full border border-base-300 px-4">
               {user?.firstName}
             </div>
             <ul className="mt-3 p-2 menu menu-sm dropdown-content rounded-box w-52 z-40">
@@ -74,8 +74,8 @@ function Homepage() {
       {/* Main Content */}
       <div className="container mx-auto max-w-5xl px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-semibold tracking-tight text-white">Problems</h1>
-          <p className="mt-1 text-sm text-zinc-400">
+          <h1 className="text-3xl font-semibold tracking-tight">Problems</h1>
+          <p className="mt-1 text-sm text-base-content/60">
             {filteredProblems.length} of {problems.length} shown
             {solvedProblems.length > 0 && ` · ${solvedProblems.length} solved`}
           </p>
@@ -122,7 +122,7 @@ function Homepage() {
             <NavLink
               key={problem._id}
               to={`/problem/${problem._id}`}
-              className="card transition-colors duration-150 hover:border-white/30 hover:bg-white/[0.03] focus-visible:outline-2 focus-visible:outline-white"
+              className="card transition-colors duration-150 hover:border-primary/50 hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-primary"
             >
               <div className="card-body p-5">
                 <div className="flex items-center justify-between gap-4">

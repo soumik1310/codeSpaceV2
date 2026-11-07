@@ -23,7 +23,7 @@ function MessageText({ text }) {
             const hasLang = nl > -1 && /^[\w+#-]*$/.test(segment.slice(0, nl).trim());
             const body = (hasLang ? segment.slice(nl + 1) : segment).replace(/\n$/, '');
             return (
-                <pre key={i} className="my-2 p-3 rounded bg-black/60 overflow-x-auto text-xs font-mono">
+                <pre key={i} className="my-2 p-3 rounded bg-base-300 text-base-content overflow-x-auto text-xs font-mono">
                     <code>{body}</code>
                 </pre>
             );
