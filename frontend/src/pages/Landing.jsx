@@ -37,7 +37,7 @@ function PasswordField({ id, placeholder, autoComplete, error, registerProps }) 
   return (
     <div className="cs-field">
       <div className="cs-inputwrap">
-        <Lock className="cs-i" size={22} strokeWidth={1.8} aria-hidden="true" />
+        <Lock className="cs-i" size={18} strokeWidth={1.8} aria-hidden="true" />
         <input
           id={id}
           className="cs-input"
@@ -54,7 +54,7 @@ function PasswordField({ id, placeholder, autoComplete, error, registerProps }) 
           onClick={() => setShow((s) => !s)}
           aria-label={show ? 'Hide password' : 'Show password'}
         >
-          {show ? <Eye size={22} strokeWidth={1.8} /> : <EyeOff size={22} strokeWidth={1.8} />}
+          {show ? <Eye size={18} strokeWidth={1.8} /> : <EyeOff size={18} strokeWidth={1.8} />}
         </button>
       </div>
       {error && <p className="cs-err" role="alert">{error.message}</p>}
@@ -89,19 +89,20 @@ function SubmitButton({ busy, children }) {
       {busy ? <span className="cs-spin" aria-label="Please wait" /> : (
         <>
           {children}
-          <ArrowRight size={20} strokeWidth={2} aria-hidden="true" />
+          <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
         </>
       )}
     </button>
   );
 }
 
-function Landing({ initialTab = 'login' }) {
+function Landing({ initialTab = 'login', initialView = 'auth' }) {
   const dispatch = useDispatch();
   const [tab, setTab] = useState(initialTab === 'register' ? 'reg' : 'login');
+  const [view, setView] = useState(initialView); // 'hero' (demo) | 'auth' (login/register)
   const [busy, setBusy] = useState(false);
   const [serverError, setServerError] = useState('');
-  const cardRef = useRef(null);
+  const stageRef = useRef(null);
 
   const loginForm = useForm({ resolver: zodResolver(loginSchema) });
   const signupForm = useForm({ resolver: zodResolver(signupSchema) });
@@ -131,10 +132,20 @@ function Landing({ initialTab = 'login' }) {
     }
   };
 
-  const startExploring = () => {
-    cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    const id = tab === 'login' ? 'cs-login-email' : 'cs-reg-name';
-    setTimeout(() => document.getElementById(id)?.focus({ preventScroll: true }), 350);
+  // demo card -> login/register card
+  const openAuth = (to = 'login') => {
+    setView('auth');
+    setTab(to);
+    setServerError('');
+    try { window.history.replaceState(window.history.state, '', PATHS[to]); } catch { /* ignore */ }
+    stageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const id = to === 'login' ? 'cs-login-email' : 'cs-reg-name';
+    setTimeout(() => document.getElementById(id)?.focus({ preventScroll: true }), 450);
+  };
+
+  const backToHero = () => {
+    setView('hero');
+    try { window.history.replaceState(window.history.state, '', '/'); } catch { /* ignore */ }
   };
 
   const loginPanel = tab === 'login' ? 'cs-panel' : 'cs-panel off left';
@@ -147,16 +158,18 @@ function Landing({ initialTab = 'login' }) {
 
       <div className="cs-wrap">
         <header className="cs-header">
-          <div className="cs-logo">Code<span>Space</span></div>
+          <button type="button" className="cs-logo" onClick={backToHero} aria-label="CodeSpace home">
+            Code<span>Space</span>
+          </button>
           <div className="cs-top">
             <span>{tab === 'login' ? 'New here?' : 'Have an account?'}</span>
             <button
               type="button"
               className="cs-linkbtn"
-              onClick={() => go(tab === 'login' ? 'reg' : 'login')}
+              onClick={() => (view === 'hero' ? openAuth('reg') : go(tab === 'login' ? 'reg' : 'login'))}
             >
               {tab === 'login' ? 'Create an account' : 'Login'}
-              <ArrowRight size={20} strokeWidth={2} aria-hidden="true" />
+              <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
             </button>
           </div>
         </header>
@@ -167,12 +180,22 @@ function Landing({ initialTab = 'login' }) {
             <p className="cs-tag">
               Sharpen your skills...<br />write your <b>next chapter.</b>
             </p>
-            <button type="button" className="cs-btn" onClick={startExploring}>
-              Start Exploring <ArrowRight size={20} strokeWidth={2} aria-hidden="true" />
+            <button type="button" className="cs-btn" onClick={() => openAuth('login')}>
+              Start Exploring <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
             </button>
           </section>
 
-          <section className="cs-card" aria-label="Account" ref={cardRef}>
+          <div className="cs-stage" ref={stageRef}>
+          <section className={`cs-demo${view === 'hero' ? '' : ' off'}`} aria-label="Product preview" aria-hidden={view !== 'hero'}>
+            <div className="cs-demo-bar" aria-hidden="true"><i /><i /><i /></div>
+            <img src="/demo.gif" width="720" height="450" alt="CodeSpace demo: solving a problem in practice mode, then switching to compiler mode and running code" />
+            <div className="cs-demo-cap">
+              <span><b>Practice mode</b> for problems with tests</span>
+              <span><b>Compiler mode</b> to just run code</span>
+            </div>
+          </section>
+
+          <section className={`cs-card${view === 'auth' ? '' : ' off'}`} aria-label="Account" aria-hidden={view !== 'auth'}>
             <div className="cs-tabs" role="tablist">
               <button
                 type="button" role="tab" id="cs-t-login" className="cs-tab"
@@ -199,7 +222,7 @@ function Landing({ initialTab = 'login' }) {
                 {tab === 'login' && serverError && <p className="cs-server-err" role="alert">{serverError}</p>}
 
                 <TextField
-                  id="cs-login-email" icon={<Mail className="cs-i" size={22} strokeWidth={1.8} aria-hidden="true" />} type="email" placeholder="Email address"
+                  id="cs-login-email" icon={<Mail className="cs-i" size={18} strokeWidth={1.8} aria-hidden="true" />} type="email" placeholder="Email address"
                   label="Email address" autoComplete="email"
                   error={loginForm.formState.errors.emailId}
                   registerProps={loginForm.register('emailId')}
@@ -229,13 +252,13 @@ function Landing({ initialTab = 'login' }) {
                 {tab === 'reg' && serverError && <p className="cs-server-err" role="alert">{serverError}</p>}
 
                 <TextField
-                  id="cs-reg-name" icon={<User className="cs-i" size={22} strokeWidth={1.8} aria-hidden="true" />} type="text" placeholder="Full name"
+                  id="cs-reg-name" icon={<User className="cs-i" size={18} strokeWidth={1.8} aria-hidden="true" />} type="text" placeholder="Full name"
                   label="Full name" autoComplete="name"
                   error={signupForm.formState.errors.firstName}
                   registerProps={signupForm.register('firstName')}
                 />
                 <TextField
-                  id="cs-reg-email" icon={<Mail className="cs-i" size={22} strokeWidth={1.8} aria-hidden="true" />} type="email" placeholder="Email address"
+                  id="cs-reg-email" icon={<Mail className="cs-i" size={18} strokeWidth={1.8} aria-hidden="true" />} type="email" placeholder="Email address"
                   label="Email address" autoComplete="email"
                   error={signupForm.formState.errors.emailId}
                   registerProps={signupForm.register('emailId')}
@@ -255,6 +278,7 @@ function Landing({ initialTab = 'login' }) {
               </form>
             </div>
           </section>
+          </div>
         </main>
       </div>
     </div>

@@ -33,9 +33,9 @@ function App(){
   return(
   <>
     <Routes>
-      <Route path="/" element={isAuthenticated ?<Homepage></Homepage>:<Navigate to="/login" />}></Route>
-      <Route path="/login" element={isAuthenticated?<Navigate to="/" />:<Landing initialTab="login" />}></Route>
-      <Route path="/signup" element={isAuthenticated?<Navigate to="/" />:<Landing initialTab="register" />}></Route>
+      <Route path="/" element={isAuthenticated ?<Homepage></Homepage>:<Landing initialTab="login" initialView="hero" />}></Route>
+      <Route path="/login" element={isAuthenticated?<Navigate to="/" />:<Landing initialTab="login" initialView="auth" />}></Route>
+      <Route path="/signup" element={isAuthenticated?<Navigate to="/" />:<Landing initialTab="register" initialView="auth" />}></Route>
       <Route path="/admin" element={isAuthenticated && user?.role === 'admin' ? <Admin /> : <Navigate to="/" />} />
       <Route path="/admin/create" element={isAuthenticated && user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" />} />
       <Route path="/admin/delete" element={isAuthenticated && user?.role === 'admin' ? <AdminDelete /> : <Navigate to="/" />} />
